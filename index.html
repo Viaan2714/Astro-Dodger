@@ -242,11 +242,11 @@
             { id: "blue", name: "Blue (Default)", cost: 0, type: "blue" },
             { id: "red", name: "Red", cost: 50, type: "red" },
             { id: "green", name: "Green", cost: 100, type: "green" },
-            { id: "gold", name: "Gold ", cost: 200, type: "gold" },
-            { id: "purple", name: "Purple", cost: 300, type: "purple" },            
+            { id: "gold", name: "Gold", cost: 200, type: "gold" },
+            { id: "purple", name: "Purple ", cost: 300, type: "purple" },            
             { id: "bluepurple", name: "Blue↔Purple Gradient", cost: 500, type: "bluepurple" },
             { id: "magma", name: "Magma", cost: 1000, type: "magma" },
-          { id: "monochrome-pulsar", name: "Monochrome Pulsar", cost: 3000, type: "monochrome-pulsar"},
+            { id: "monochrome-pulsar", name: "Monochrome Pulsar", cost: 1000, type: "monochrome-pulsar"},
             { id: "galactic", name: "Galactic", cost: 5000, type: "galactic" },
             { id: "rocket", name: "Rocket Ship", cost: 7000, type: "rocket" },
             
@@ -455,22 +455,23 @@
                 fill(255);
                 ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
             } else if (currentSkin.type === "rocket") {
+                const s = 1.2; // Scale factor
                 noStroke();
                 fill("#dfe6ea");
                 beginShape();
-                vertex(-8, 10);
-                bezierVertex(-6, -6, 6, -6, 8, 10);
-                vertex(0, 18);
+                vertex(-8 * s, 10 * s);
+                bezierVertex(-6 * s, -6 * s, 6 * s, -6 * s, 8 * s, 10 * s);
+                vertex(0, 18 * s);
                 endShape(CLOSE);
                 fill("#ff6b6b");
-                triangle(-8, 10, 0, -14, 8, 10);
+                triangle(-8 * s, 10 * s, 0, -14 * s, 8 * s, 10 * s);
                 fill("#444");
-                triangle(-12, 12, -6, 12, -8, 18);
-                triangle(6, 12, 12, 12, 8, 18);
+                triangle(-12 * s, 12 * s, -6 * s, 12 * s, -8 * s, 18 * s);
+                triangle(6 * s, 12 * s, 12 * s, 12 * s, 8 * s, 18 * s);
                 fill("#66c2ff");
                 stroke(255);
                 strokeWeight(1);
-                ellipse(0, -2, 8, 8);
+                ellipse(0, -2 * s, 8 * s, 8 * s);
                 noStroke();
             } else if (currentSkin.type === "monochrome-pulsar") {
                 let alpha = map(sin(millis() / 50), -1, 1, 100, 255);
@@ -485,7 +486,6 @@
                 ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
             } else if (currentSkin.type === "galactic") {
                 noStroke();
-                // New colors: dark purple, dark pink, black, grey
                 let r = map(sin(millis() / 500), -1, 1, 50, 120);
                 let g = map(sin(millis() / 300), -1, 1, 10, 50);
                 let b = map(sin(millis() / 400), -1, 1, 80, 180);
@@ -738,9 +738,11 @@
                     drawTriangle(bluePurpleGradient, null);
                     break;
                 case "rocket":
+                    const scale = 1.2;
                     ctx.save();
                     ctx.translate(29, 26);
                     ctx.rotate(Math.PI);
+                    ctx.scale(scale, scale); // Apply scaling
                     ctx.fillStyle = "#dfe6ea";
                     ctx.beginPath();
                     ctx.moveTo(-8, 10);
@@ -782,9 +784,9 @@
                     break;
                 case "galactic":
                     const newGalacticGradient = ctx.createLinearGradient(0, 10, 0, 42);
-                    newGalacticGradient.addColorStop(0, '#1c0f4f'); // Dark Purple
-                    newGalacticGradient.addColorStop(0.5, '#6a0dad'); // Mid Purple
-                    newGalacticGradient.addColorStop(1, '#333333'); // Dark Grey
+                    newGalacticGradient.addColorStop(0, '#1c0f4f');
+                    newGalacticGradient.addColorStop(0.5, '#6a0dad');
+                    newGalacticGradient.addColorStop(1, '#333333');
                     drawTriangle(newGalacticGradient, null);
                     
                     ctx.save();

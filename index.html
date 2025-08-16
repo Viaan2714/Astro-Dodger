@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Astro Dodger</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="p5.min.js"></script>
+    <style>
+        :root {
+            --panel: rgba(255, 255, 255, 0.03);
+            --accent: #44aaff;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #0f1720;
+            color: #fff;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        #top-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .hud-chip {
+            background: var(--panel);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        #canvas-holder {
+            display: flex;
+            justify-content: center;
+        }
+
+        #hud {
+            position: absolute;
+            right: 12px;
+            top: 56px;
+            z-index: 12;
+            background: var(--panel);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        #gameover {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 40%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(180deg, #1b2030, #141722);
+            padding: 20px 28px;
+            border-radius: 12px;
+            box-shadow: 0 6px 40px rgba(0, 0, 0, 0.7);
+            z-index: 30;
+            text-align: center;
+        }
+
+        #gameover.visible {
+            display: block;
+        }
+
+        #shopModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 40;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #shopModal.visible {
+            display: flex;
+        }
+
+        .shop {
+            width: min(520px, 96vw);
+            padding: 16px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #111623, #0e1320);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.67);
+            color: #fff;
+        }
+
+        .shop h2 {
+            margin: 0 0 8px 0;
+        }
+
+        .shop .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .skin-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            max-height: 52vh;
+            overflow: auto;
+            padding-right: 6px;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+        }
+
+        .skin {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .swatch {
+            width: 60px;
+            height: 44px;
+            border-radius: 8px;
+            position: relative;
+            flex: 0 0 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .skin-info {
+            flex: 1;
+        }
+
+        .skin-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        footer {
+            text-align: center;
+            padding: 8px 0 18px 0;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚀 Astro Dodger Viaan 🚀</h1>
+        <div id="top-right">
+            <div class="hud-chip">Score: <span id="score-text">0</span></div>
+            <div class="hud-chip">Best: <span id="best-score-text">0</span></div>
+            <button id="shopBtn">Shop</button>
+            <button id="toggleHitboxBtn">Toggle Hitboxes</button>
+        </div>
+    </header>
+    <div id="canvas-holder"></div>
+    <div id="hud">💰 <span id="coin-count">0</span></div>
+    <div id="gameover">
+        <h2>Game Over 😵</h2>
+        <p>Your Score: <strong id="final-score">0</strong></p>
+        <p>Coins Earned: <strong id="earned-coins">0</strong></p>
+        <div style="margin-top: 10px">
+            <button id="restartBtn">Play Again</button>
+            <button id="openShopFromGameover" style="margin-left: 8px">Open Shop</button>
+        </div>
+    </div>
+    <div id="shopModal" role="dialog" aria-modal="true">
+        <div class="shop">
+            <div class="row">
+                <h2>Ship Skins</h2>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                    <div>Balance: <strong id="shop-coins">0</strong> 💰</div>
+                    <button id="closeShop">Close</button>
+                </div>
+            </div>
+            <div class="skin-list" id="skin-list"></div>
+            <div style="margin-top: 12px; text-align: right; font-size: 12px; opacity: 0.9">
+                Tip: Earn coins = floor(score) when the run ends.
+            </div>
+        </div>
+    </div>
+    <footer>
+        <small>HOPE YOU LOVE IT!!!</small>
+    </footer>
+    <script>
+        let ship,
+            asteroids,
+            score,
+            gameOver,
+            shipSize,
+            asteroidSize,
+            moveDir,
+            coins = 0,
+            coinsAwardedThisRun = false,
+            showHitboxes = false;
+
+        const ASTEROID_COUNT = 10;
+        const SKINS = [
+            { id: "blue", name: "Blue (Default)", cost: 0, type: "blue" },
+            { id: "red", name: "Red (Outline)", cost: 50, type: "red" },
+            { id: "green", name: "Green (Stripes)", cost: 100, type: "green" },
+            { id: "gold", name: "Gold (Sparkles)", cost: 200, type: "gold" },
+            { id: "purple", name: "Purple (Arrow)", cost: 300, type: "purple" },
+            { id: "bluepurple", name: "Blue↔Purple Gradient", cost: 500, type: "bluepurple" },
+            { id: "gold-black", name: "Gold & Black (Animated)", cost: 1000, type: "gold-black" },
+            { id: "magma", name: "Magma (Animated)", cost: 3000, type: "magma" },
+            { id: "quantum", name: "Quantum", cost: 5000, type: "quantum" },
+            { id: "rocket", name: "Rocket Ship", cost: 7000, type: "rocket" },
+            
+        ];
+
+        const KEY_COINS = "astro_coins_v3";
+        const KEY_OWNED = "astro_owned_skins_v3";
+        const KEY_EQUIP = "astro_equipped_skin_v3";
+        const KEY_BEST = "astro_best_score_v1";
+
+        let ownedSkins = [];
+        let equippedSkin = "blue";
+        let bestScore = 0;
+
+        function setup() {
+            let canvasWidth = windowWidth < 550 ? 0.96 * windowWidth : 480;
+            let canvas = createCanvas(canvasWidth, 320);
+            canvas.parent("canvas-holder");
+            shipSize = 36;
+            asteroidSize = 36;
+            loadPersistence();
+            resetGame();
+            document.getElementById("shopBtn").addEventListener("click", openShop);
+            document.getElementById("closeShop").addEventListener("click", closeShop);
+            document.getElementById("restartBtn").addEventListener("click", resetGame);
+            document.getElementById("openShopFromGameover").addEventListener("click", openShop);
+            window.addEventListener("resize", windowResized);
+            document.getElementById("toggleHitboxBtn").addEventListener("click", () => {
+                showHitboxes = !showHitboxes;
+            });
+            renderShop();
+            updateHud();
+        }
+
+        function loadPersistence() {
+            const storedCoins = parseInt(localStorage.getItem(KEY_COINS));
+            if (isNaN(storedCoins)) {
+                localStorage.setItem(KEY_COINS, "0");
+            } else {
+                coins = storedCoins;
+            }
+
+            const storedOwned = localStorage.getItem(KEY_OWNED);
+            if (storedOwned) {
+                try {
+                    ownedSkins = JSON.parse(storedOwned);
+                } catch (e) {
+                    ownedSkins = ["blue"];
+                }
+            } else {
+                ownedSkins = ["blue"];
+                localStorage.setItem(KEY_OWNED, JSON.stringify(ownedSkins));
+            }
+
+            const storedEquipped = localStorage.getItem(KEY_EQUIP);
+            equippedSkin = storedEquipped || "blue";
+            if (!storedEquipped) {
+                localStorage.setItem(KEY_EQUIP, equippedSkin);
+            }
+
+            const storedBest = parseInt(localStorage.getItem(KEY_BEST));
+            bestScore = isNaN(storedBest) ? 0 : storedBest;
+            updateHud();
+        }
+
+        function saveCoins() {
+            localStorage.setItem(KEY_COINS, String(coins));
+            updateHud();
+        }
+
+        function saveOwned() {
+            localStorage.setItem(KEY_OWNED, JSON.stringify(ownedSkins));
+        }
+
+        function saveEquipped() {
+            localStorage.setItem(KEY_EQUIP, equippedSkin);
+        }
+
+        function saveBest() {
+            localStorage.setItem(KEY_BEST, String(bestScore));
+        }
+
+        function resetGame() {
+            ship = { x: width / 2, y: height - shipSize - 10, size: shipSize };
+            asteroids = [];
+            for (let i = 0; i < ASTEROID_COUNT; i++) {
+                asteroids.push(newAsteroid());
+            }
+            score = 0;
+            gameOver = false;
+            moveDir = 0;
+            coinsAwardedThisRun = false;
+            document.getElementById("gameover").classList.remove("visible");
+            loop();
+        }
+
+        function newAsteroid() {
+            return {
+                x: random(asteroidSize / 2, width - asteroidSize / 2),
+                y: random(-height, -asteroidSize),
+                r: asteroidSize / 2 + random(0, 8),
+                rot: random(TWO_PI),
+                rotSpeed: random(-0.05, 0.05),
+                speed: 2.8 + random(0, 1.2),
+            };
+        }
+
+        function draw() {
+            background(12, 18, 28);
+            drawStars();
+            drawShip(ship.x, ship.y);
+            ship.x += 6 * moveDir;
+            ship.x = constrain(ship.x, shipSize / 2, width - shipSize / 2);
+
+            for (let i = 0; i < asteroids.length; i++) {
+                let asteroid = asteroids[i];
+                asteroid.y += asteroid.speed + score * 0.008;
+                asteroid.rot += asteroid.rotSpeed;
+                drawAsteroid(asteroid);
+
+                if (dist(ship.x, ship.y, asteroid.x, asteroid.y) < asteroid.r + ship.size / 2 - 3) {
+                    showGameOver();
+                }
+
+                if (asteroid.y > height + asteroid.r) {
+                    Object.assign(asteroid, newAsteroid());
+                }
+            }
+
+            if (!gameOver) {
+                score += 0.13;
+            }
+
+            document.getElementById("score-text").textContent = floor(score);
+            updateHud();
+        }
+
+        function drawShip(x, y) {
+            push();
+            translate(x, y);
+            rotate(PI);
+
+            const currentSkin = SKINS.find((skin) => skin.id === equippedSkin) || SKINS[0];
+
+            strokeWeight(1.5);
+            if (currentSkin.type === "blue") {
+                fill("#44aaff");
+                stroke(255);
+                triangle(-shipSize / 2, shipSize / 2, 0, -shipSize / 2, shipSize / 2, shipSize / 2);
+                noStroke();
+                fill(255);
+                ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
+            } else if (currentSkin.type === "red") {
+                fill("#ff6b6b");
+                stroke(255);
+                strokeWeight(1.2);
+                triangle(-shipSize / 2 + 3, shipSize / 2 - 2, 0, -shipSize / 2 + 2, shipSize / 2 - 3, shipSize / 2 - 2);
+                noStroke();
+                fill(255);
+                ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
+            } else if (currentSkin.type === "green") {
+                fill("#57d47b");
+                stroke(255);
+                triangle(-shipSize / 2, shipSize / 2, 0, -shipSize / 2, shipSize / 2, shipSize / 2);
+                noStroke();
+                fill(255);
+                ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
+            } else if (currentSkin.type === "gold") {
+                fill("#ffd166");
+                stroke(180, 120, 40);
+                strokeWeight(1.2);
+                triangle(-shipSize / 2, shipSize / 2, 0, -shipSize / 2, shipSize / 2, shipSize / 2);
+                noStroke();
+                fill(255, 200, 120);
+                ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
+            } else if (currentSkin.type === "purple") {
+                fill("#be6bff");
+                stroke(255);
+                beginShape();
+                vertex(-shipSize / 2, shipSize / 2);
+                vertex(0, -shipSize / 2 - 6);
+                vertex(shipSize / 2, shipSize / 2);
+                endShape(CLOSE);
+                noStroke();
+                fill(255);
+                ellipse(0, -shipSize / 2.6, shipSize / 5, shipSize / 5);
+            } else if (currentSkin.type === "magma") {
+                noStroke();
+                let pulse = map(sin(millis() / 50), -1, 1, 0, 15);
+                let gradient = drawingContext.createLinearGradient(0, -shipSize/2, 0, shipSize/2);
+                gradient.addColorStop(0, color(255, 69, 0, 255 - pulse));
+                gradient.addColorStop(0.5, color(139, 0, 0, 255 - pulse/2));
+                gradient.addColorStop(1, color(0, 0, 0, 255 - pulse));
+                drawingContext.fillStyle = gradient;
+                triangle(-shipSize/2, shipSize/2, 0, -shipSize/2, shipSize/2, shipSize/2);
+                fill(255);
+                ellipse(0, -shipSize/4.2, shipSize/4, shipSize/4);
+            } else if (currentSkin.type === "bluepurple") {
+                noStroke();
+                let gradient = drawingContext.createLinearGradient(0, -shipSize / 2, 0, shipSize / 2);
+                gradient.addColorStop(0, '#44aaff');
+                gradient.addColorStop(1, '#be6bff');
+                drawingContext.fillStyle = gradient;
+                triangle(-shipSize / 2, shipSize / 2, 0, -shipSize / 2, shipSize / 2, shipSize / 2);
+                fill(255);
+                ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
+            } else if (currentSkin.type === "rocket") {
+                noStroke();
+                fill("#dfe6ea");
+                beginShape();
+                vertex(-8, 10);
+                bezierVertex(-6, -6, 6, -6, 8, 10);
+                vertex(0, 18);
+                endShape(CLOSE);
+                fill("#ff6b6b");
+                triangle(-8, 10, 0, -14, 8, 10);
+                fill("#444");
+                triangle(-12, 12, -6, 12, -8, 18);
+                triangle(6, 12, 12, 12, 8, 18);
+                fill("#66c2ff");
+                stroke(255);
+                strokeWeight(1);
+                ellipse(0, -2, 8, 8);
+            } else if (currentSkin.type === "gold-black") {
+    let pulse = map(sin(millis() / 250), -1, 1, 0, 15);
+    strokeWeight(1.5);
+    fill(255, 215, 0, 100 + pulse);
+    stroke(0, 0, 0, 150 + pulse);
+    triangle(-shipSize / 2, shipSize / 2, 0, -shipSize / 2, shipSize / 2, shipSize / 2);
+    
+    noFill();
+    stroke(255, 255, 255, 150 + pulse);
+    strokeWeight(1);
+    triangle(-shipSize/2, shipSize/2, 0, -shipSize/2, shipSize/2, shipSize/2);
+}
+            } else if (currentSkin.type === "quantum") {
+                let alpha = map(sin(millis() / 500), -1, 1, 150, 255);
+                noFill();
+                stroke(173, 216, 230, alpha);
+                strokeWeight(1.5);
+                triangle(-shipSize/2, shipSize/2, 0, -shipSize/2, shipSize/2, shipSize/2);
+                stroke(255, 255, 255, alpha * 0.7);
+                strokeWeight(1.2);
+                line(-shipSize/4, shipSize/4, shipSize/4, shipSize/4);
+                line(0, shipSize/4, 0, -shipSize/4);
+                
+                fill(255, 255, 255, 120);
+                ellipse(0, -shipSize/4.2, shipSize/4, shipSize/4);
+            }
+
+            pop();
+
+            if (showHitboxes) {
+                push();
+                translate(x, y);
+                noFill();
+                stroke(255, 0, 0);
+                ellipse(0, 0, ship.size);
+                pop();
+            }
+        }
+
+        function drawAsteroid(asteroid) {
+            push();
+            translate(asteroid.x, asteroid.y);
+            rotate(asteroid.rot);
+            fill("#d4a754");
+            stroke("#b38230");
+            strokeWeight(2);
+            ellipse(0, 0, asteroid.r * 2);
+            noStroke();
+            fill("#b38230");
+            ellipse(-asteroid.r / 2, asteroid.r / 3, asteroid.r, asteroid.r / 1.6);
+            pop();
+
+            if (showHitboxes) {
+                push();
+                translate(asteroid.x, asteroid.y);
+                noFill();
+                stroke(255, 0, 0);
+                ellipse(0, 0, asteroid.r * 2);
+                pop();
+            }
+        }
+
+        function drawStars() {
+            for (let i = 0; i < 18; i++) {
+                fill(255, 220 * random(0.2, 0.55));
+                noStroke();
+                ellipse(random(width), random(height), random(0.4, 2));
+            }
+        }
+
+        function showGameOver() {
+            if (!gameOver) {
+                gameOver = true;
+                noLoop();
+                document.getElementById("final-score").textContent = Math.floor(score);
+                document.getElementById("earned-coins").textContent = coinsAwardedThisRun ? 0 : (coins += Math.floor(score), saveCoins(), coinsAwardedThisRun = true, Math.floor(score));
+                if (Math.floor(score) > bestScore) {
+                    bestScore = Math.floor(score);
+                    saveBest();
+                    updateHud();
+                }
+                document.getElementById("gameover").classList.add("visible");
+            }
+        }
+
+        function keyPressed() {
+            if (keyCode === 37 || key === "a" || key === "A") {
+                moveDir = -1;
+            } else if (keyCode === 39 || key === "d" || key === "D") {
+                moveDir = 1;
+            }
+            if (gameOver && keyCode === 13) {
+                resetGame();
+            }
+        }
+
+        function keyReleased() {
+            if (keyCode === 37 || keyCode === 39 || key === "a" || key === "A" || key === "d" || key === "D") {
+                moveDir = 0;
+            }
+        }
+
+        function mouseClicked() {
+            return !(mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height);
+        }
+
+        function touchMoved() {
+            if (document.getElementById("shopModal").classList.contains("visible") || gameOver) {
+                return true;
+            }
+            if (touches.length > 0) {
+                ship.x = constrain(touches[0].x, shipSize / 2, width - shipSize / 2);
+            }
+            return false;
+        }
+
+        function windowResized() {
+            let canvasWidth = windowWidth < 550 ? 0.96 * windowWidth : 480;
+            resizeCanvas(canvasWidth, 320);
+            ship.x = constrain(ship.x, shipSize / 2, width - shipSize / 2);
+        }
+
+        function updateHud() {
+            const currentScore = Math.floor(score || 0);
+            const coinCountElement = document.getElementById("coin-count");
+            const shopCoinsElement = document.getElementById("shop-coins");
+            const bestScoreElement = document.getElementById("best-score-text");
+
+            if (coinCountElement) coinCountElement.textContent = coins;
+            if (shopCoinsElement) shopCoinsElement.textContent = coins;
+            document.getElementById("score-text").textContent = currentScore;
+            if (bestScoreElement) bestScoreElement.textContent = bestScore;
+        }
+
+        function openShop() {
+            renderShop();
+            document.getElementById("shopModal").classList.add("visible");
+        }
+
+        function closeShop() {
+            document.getElementById("shopModal").classList.remove("visible");
+        }
+
+        function renderShop() {
+            updateHud();
+            const skinList = document.getElementById("skin-list");
+            skinList.innerHTML = "";
+
+            SKINS.forEach((skin) => {
+                const isOwned = ownedSkins.includes(skin.id);
+                const isEquipped = equippedSkin === skin.id;
+
+                const skinDiv = document.createElement("div");
+                skinDiv.className = "skin";
+
+                const swatchDiv = document.createElement("div");
+                swatchDiv.className = "swatch";
+                const previewCanvas = createPreviewCanvasNode(skin);
+                swatchDiv.appendChild(previewCanvas);
+
+                const infoDiv = document.createElement("div");
+                infoDiv.className = "skin-info";
+                infoDiv.innerHTML = `<div style="font-weight: 600">${skin.name}</div><div style="opacity: 0.85">${skin.cost} 💰</div>`;
+
+                const actionsDiv = document.createElement("div");
+                actionsDiv.className = "skin-actions";
+
+                if (isOwned) {
+                    const equipBtn = document.createElement("button");
+                    equipBtn.textContent = isEquipped ? "Equipped" : "Equip";
+                    equipBtn.disabled = isEquipped;
+                    equipBtn.onclick = () => {
+                        equippedSkin = skin.id;
+                        saveEquipped();
+                        renderShop();
+                    };
+                    actionsDiv.appendChild(equipBtn);
+                } else {
+                    const buyBtn = document.createElement("button");
+                    buyBtn.textContent = `Buy (${skin.cost})`;
+                    buyBtn.disabled = coins < skin.cost;
+                    buyBtn.onclick = () => {
+                        if (coins >= skin.cost) {
+                            coins -= skin.cost;
+                            ownedSkins.push(skin.id);
+                            saveCoins();
+                            saveOwned();
+                            renderShop();
+                        } else {
+                            alert("Not enough coins!");
+                        }
+                    };
+                    actionsDiv.appendChild(buyBtn);
+                }
+
+                skinDiv.appendChild(swatchDiv);
+                skinDiv.appendChild(infoDiv);
+                skinDiv.appendChild(actionsDiv);
+                skinList.appendChild(skinDiv);
+            });
+        }
+
+        function createPreviewCanvasNode(skin) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 60;
+            canvas.height = 44;
+            const ctx = canvas.getContext("2d");
+
+            function drawTriangle(color, strokeColor) {
+                ctx.save();
+                ctx.translate(29, 26);
+                ctx.rotate(Math.PI);
+
+                if (strokeColor) {
+                    ctx.lineWidth = 1.4;
+                    ctx.strokeStyle = strokeColor;
+                }
+                if (color) {
+                    ctx.fillStyle = color;
+                }
+                ctx.beginPath();
+                ctx.moveTo(-16, 16);
+                ctx.lineTo(0, -16);
+                ctx.lineTo(16, 16);
+                ctx.closePath();
+                if (color) ctx.fill();
+                if (strokeColor) ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            switch (skin.type) {
+                case "blue":
+                    drawTriangle("#44aaff", "#fff");
+                    break;
+                case "red":
+                    ctx.shadowColor = "rgba(255, 120, 120, 0.55)";
+                    ctx.shadowBlur = 6;
+                    drawTriangle("#ff6b6b", "#fff");
+                    ctx.shadowBlur = 0;
+                    break;
+                case "green":
+                    drawTriangle("#57d47b", "#fff");
+                    break;
+                case "gold":
+                    drawTriangle("#ffd166", "#b37a2a");
+                    break;
+                case "purple":
+                    drawTriangle("#be6bff", "#fff");
+                    break;
+                case "magma":
+                    const magmaGradient = ctx.createLinearGradient(0, 10, 0, 42);
+                    magmaGradient.addColorStop(0, '#ff4500');
+                    magmaGradient.addColorStop(0.5, '#8B0000');
+                    magmaGradient.addColorStop(1, '#000000');
+                    drawTriangle(magmaGradient, null);
+                    break;
+                case "bluepurple":
+                    const bluePurpleGradient = ctx.createLinearGradient(0, 10, 0, 42);
+                    bluePurpleGradient.addColorStop(0, '#44aaff');
+                    bluePurpleGradient.addColorStop(1, '#be6bff');
+                    drawTriangle(bluePurpleGradient, null);
+                    break;
+                case "rocket":
+                    ctx.save();
+                    ctx.translate(29, 26);
+                    ctx.rotate(Math.PI);
+                    ctx.fillStyle = "#dfe6ea";
+                    ctx.beginPath();
+                    ctx.moveTo(-16, 16);
+                    ctx.bezierCurveTo(-10, -6, 10, -6, 16, 16);
+                    ctx.lineTo(0, 24);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = "#ff6b6b";
+                    ctx.beginPath();
+                    ctx.moveTo(-16, 16);
+                    ctx.lineTo(0, -14);
+                    ctx.lineTo(16, 16);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = "#444";
+                    ctx.beginPath();
+                    ctx.moveTo(-20, 18);
+                    ctx.lineTo(-10, 18);
+                    ctx.lineTo(-12, 24);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(10, 18);
+                    ctx.lineTo(20, 18);
+                    ctx.lineTo(12, 24);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = "#66c2ff";
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 4, 0, Math.PI * 2, false);
+                    ctx.fill();
+                    ctx.restore();
+                    break;
+                case "gold-black":
+                    drawTriangle("#FFD700", "#000");
+                    break;
+                case "quantum":
+                    ctx.save();
+                    ctx.translate(29, 26);
+                    ctx.rotate(Math.PI);
+                    ctx.strokeStyle = "rgba(173, 216, 230, 0.8)";
+                    ctx.lineWidth = 1.4;
+                    ctx.beginPath();
+                    ctx.moveTo(-16, 16);
+                    ctx.lineTo(0, -16);
+                    ctx.lineTo(16, 16);
+                    ctx.closePath();
+                    ctx.stroke();
+                    ctx.restore();
+                    break;
+            }
+            return canvas;
+        }
+    </script>
+</body>
+</html>

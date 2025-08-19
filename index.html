@@ -243,14 +243,13 @@
             { id: "red", name: "Red", cost: 50, type: "red" },
             { id: "green", name: "Green", cost: 100, type: "green" },
             { id: "gold", name: "Gold", cost: 200, type: "gold" },
-            { id: "purple", name: "Purple ", cost: 300, type: "purple" },            
+            { id: "purple", name: "Purple ", cost: 300, type: "purple" },
             { id: "bluepurple", name: "Blue↔Purple Gradient", cost: 500, type: "bluepurple" },
             { id: "magma", name: "Magma", cost: 1000, type: "magma" },
             { id: "monochrome-pulsar", name: "Monochrome Pulsar", cost: 3000, type: "monochrome-pulsar"},
             { id: "galactic", name: "Galactic", cost: 5000, type: "galactic" },
             { id: "rocket", name: "Rocket Ship", cost: 7000, type: "rocket" },
-            
-            
+            { id: "neon", name: "Neon", cost: 8000, type: "neon" },
         ];
 
         const KEY_COINS = "astro_coins_v3";
@@ -455,7 +454,7 @@
                 fill(255);
                 ellipse(0, -shipSize / 4.2, shipSize / 4, shipSize / 4);
             } else if (currentSkin.type === "rocket") {
-                const s = 1.2; // Scale factor
+                const s = 1.2;
                 noStroke();
                 fill("#dfe6ea");
                 beginShape();
@@ -496,8 +495,20 @@
                     let starSize = random(1, 3);
                     let starAlpha = random(100, 255);
                     fill(255, starAlpha);
+                    noStroke();
                     ellipse(random(-shipSize / 2, shipSize / 2), random(-shipSize / 2, shipSize / 2), starSize, starSize);
                 }
+            } else if (currentSkin.type === "neon") {
+                let r = map(sin(millis() / 800), -1, 1, 0, 255);
+                let g = map(sin(millis() / 600), -1, 1, 0, 255);
+                let b = map(sin(millis() / 700), -1, 1, 0, 255);
+                noFill();
+                stroke(r, g, b);
+                strokeWeight(2.5);
+                triangle(-shipSize / 2, shipSize / 2, 0, -shipSize / 2, shipSize / 2, shipSize / 2);
+                strokeWeight(1);
+                stroke(r, g, b, 150);
+                triangle(-shipSize / 2 + 5, shipSize / 2 - 5, 0, -shipSize / 2 + 5, shipSize / 2 - 5, shipSize / 2 - 5);
             }
 
             pop();
@@ -742,7 +753,7 @@
                     ctx.save();
                     ctx.translate(29, 26);
                     ctx.rotate(Math.PI);
-                    ctx.scale(scale, scale); // Apply scaling
+                    ctx.scale(scale, scale);
                     ctx.fillStyle = "#dfe6ea";
                     ctx.beginPath();
                     ctx.moveTo(-8, 10);
@@ -801,6 +812,26 @@
                         ctx.arc(Math.random() * 32 - 16, Math.random() * 32 - 16, starSize / 2, 0, 2 * Math.PI, false);
                         ctx.fill();
                     }
+                    ctx.restore();
+                    break;
+                case "neon":
+                    drawTriangle(null, "#fff");
+                    const neonColors = ["#f0f", "#0ff", "#ff0"];
+                    let colorIndex = Math.floor((Date.now() / 200) % neonColors.length);
+                    let currentColor = neonColors[colorIndex];
+                    ctx.save();
+                    ctx.translate(29, 26);
+                    ctx.rotate(Math.PI);
+                    ctx.lineWidth = 1.8;
+                    ctx.strokeStyle = currentColor;
+                    ctx.shadowColor = currentColor;
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(-16, 16);
+                    ctx.lineTo(0, -16);
+                    ctx.lineTo(16, 16);
+                    ctx.closePath();
+                    ctx.stroke();
                     ctx.restore();
                     break;
             }
